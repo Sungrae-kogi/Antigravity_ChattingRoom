@@ -1,9 +1,12 @@
 package com.example.chattingroom.mapper;
 
+import com.example.chattingroom.BaseIntegrationTest;
 import com.example.chattingroom.dto.MessageDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -24,32 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
     이것을 Mockito 라이브러리가 가짜(Mock) 객체를 만들어서 연기를 시키게 함.
 
  */
-
-@SpringBootTest
-@Transactional
-@Testcontainers         // 도커 컨테이너 준비 선언
-public class ChatMapperTest {
-
-    /*
-        도커 세팅   - 도커에게 MariaDB 10.6 창고를 임시로 띄우라는 명령
-     */
-    @Container
-    static MariaDBContainer<?> mariadb = new MariaDBContainer<>("mariadb:10.11").withDatabaseName("testdb")
-            .withUsername("testuser")
-            .withPassword("testpass");
-
-    /*
-        도커 세팅   - 로컬 application.properties에 적힌 dB 주소를 무시하고, 방금 도커가 띄운 '가짜 DB 주소'로 연결을 바꿈
-     */
-    @DynamicPropertySource
-    static void overrideProps(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", mariadb::getJdbcUrl);
-        registry.add("spring.datasource.username", mariadb::getUsername);
-        registry.add("spring.datasource.password", mariadb::getPassword);
-
-        // 테스트 할 때 무조건 schema.sql을 실행해서 테이블을 만들어
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
+@MybatisTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+public class ChatMapperTest extends BaseIntegrationTest {
 
     @Autowired
     private ChatMapper chatMapper;
