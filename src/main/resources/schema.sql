@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS CHAT_MESSAGE
+(
+    id
+    BIGINT
+    AUTO_INCREMENT
+    PRIMARY
+    KEY,
+    sender
+    VARCHAR
+(
+    50
+) NOT NULL,
+    content TEXT NOT NULL,
+    send_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
