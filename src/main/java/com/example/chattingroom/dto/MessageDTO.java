@@ -10,6 +10,6 @@ public class MessageDTO {
     private String sender;
     private String content;
 
-    @JsonFormat(pattern = "a h:mm", locale = "ko")
-    private LocalDateTime sendTime;
+    private LocalDateTime sendTime = LocalDateTime.now();
+    // builder패턴이나 정적 static method로 변경??
 }

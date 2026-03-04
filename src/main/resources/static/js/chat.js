@@ -46,8 +46,16 @@ function connectWebSocket() {
             let sender = msgObj.sender;
             let content = msgObj.content;
 
-            // 기존 getFormatTime() 대신 서버에서 가져온 시간
-            let timeStr = msgObj.sendTime;
+            // 백엔드에서 넘어온 ISO 시간 데이터를 화면용으로 변환 ** 중요, 관심사의 분리로, 구현하면 해외의 인물과 연락할때 각 국가별로 시간을 프론트단에서 처리해서 표기하게됨.
+            let rawTime = msgObj.sendTime;
+            let dateObj = new Date(rawTime);
+
+            // 기존 getFormatTime() 대신 서버에서 가져온 시간    -> locales 인자로 전달한 값에 따라 표기법이바뀜. 프론트단에 역할 위임하기에 적합.
+            let timeStr = dateObj.toLocaleTimeString('ko-KR', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
 
             // 내가 보낸 메시지라면? (우측 정렬)
             if (sender === username) {
