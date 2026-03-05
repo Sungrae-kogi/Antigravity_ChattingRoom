@@ -35,6 +35,8 @@
     </div>
     <div id="chatBox"></div>
     <div class="input-wrap">
+        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        <button onclick="document.getElementById('imageInput').click()">📷 사진</button>
         <input type="text" id="msgInput"
                placeholder="메시지 입력..."/>
         <button class="btn-send" id="btnSend">

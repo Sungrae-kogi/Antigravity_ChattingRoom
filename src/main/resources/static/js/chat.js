@@ -158,3 +158,30 @@ function getFormatTime() {
     if (m < 10) m = "0" + m;
     return ampm + " " + h + ":" + m;
 }
+
+document.getElementById('imageInput').addEventListener('change', function() {
+    let file = this.files[0];
+    if (!file) return;
+
+    // HTTP 통신을 위한 FormData를 생성
+    let formData = new FormData();
+    formData.append("file", file);
+
+    // 작성한 백엔드 창구로 사진을 전송 -> fetch 를 사용
+    fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData
+    }).then(response => response.text())
+        .then(imageUrl => {
+            //서버 저장이 끝나고 URL이 돌아오면, 웹소켓을 통해 채팅방에 URL을 전송
+            let msgObj = {
+                sender: username,
+                content: imageUrl,
+                messageType: "IMAGE"    // 텍스트와 구분하기 위한 꼬리표
+            };
+            ws.send(JSON.stringify(msgObj));
+        }).catch(error => alert("사진 업로드에 실패했습니다."));
+
+    // 전송 후 입력창 초기화
+    this.value = '';
+})
