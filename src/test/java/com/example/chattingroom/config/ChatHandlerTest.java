@@ -1,6 +1,7 @@
 package com.example.chattingroom.config;
 
 import com.example.chattingroom.service.ChatService;
+import com.example.chattingroom.service.GeminiService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -28,6 +29,9 @@ class ChatHandlerTest {
 
     @Mock
     private ChatService chatService;
+
+    @Mock
+    private GeminiService geminiService;
 
     // JSON 파싱은 하는 척이 아니라 실제로 이루어 져야 하므로, SPY 객체 사용.
     @Spy
