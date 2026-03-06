@@ -62,6 +62,13 @@ function renderMessage(msgObj){
     let sender = msgObj.sender;
     let content = msgObj.content;
 
+    // 만약 이미지 경로라면 img 태그로 덮어씌운다.
+    let displayContent = content;
+
+    if (content.startsWith("/uploads/")){
+        displayContent = "<img src='" + content + "' style='max-width: 200px; " + "border-radius: 8px;'>";
+    }
+
     // 내가 보낸 메시지라면? (우측 정렬)
     if (sender === username) {
         box.innerHTML +=
@@ -69,7 +76,7 @@ function renderMessage(msgObj){
             "<span class='msg-time'>" +
             timeStr + "</span>" +
             "<div class='msg-bubble'>" +
-            content +
+            displayContent +
             "</div></div>";
 
         // 남이 보낸 메시지라면? (좌측 정렬 + 이름 표시)
@@ -79,7 +86,7 @@ function renderMessage(msgObj){
             sender +
             "</div>" +
             "<div class='msg-row msg-other'>" +
-            "<div class='msg-bubble'>" + content + "</div>" +
+            "<div class='msg-bubble'>" + displayContent + "</div>" +
             "<span class='msg-time'>" +
             timeStr + "</span>" +
             "</div>";

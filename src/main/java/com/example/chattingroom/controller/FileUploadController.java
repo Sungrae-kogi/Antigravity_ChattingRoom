@@ -33,7 +33,7 @@ public class FileUploadController {
             file.transferTo(destination);
 
             // 프론트엔드가 이 이미지를 띄울 수 있도록 가상의 접속 주소 (URL) 을 영수증처럼 반환.
-            String imageUrl = "/images/" + uniqueName;
+            String imageUrl = "/uploads/" + uniqueName;
             return ResponseEntity.ok(imageUrl);
         }catch (Exception e){
             return ResponseEntity.internalServerError().body("파일 업로드 실패");
