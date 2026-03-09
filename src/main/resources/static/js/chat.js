@@ -170,6 +170,15 @@ document.getElementById('imageInput').addEventListener('change', function() {
     let file = this.files[0];
     if (!file) return;
 
+    // 서버 전송 전 사전 용량 차단
+    const MAX_SIZE = 5 * 1024 * 1024;
+
+    if (file.size > MAX_SIZE) {
+        alert("파일 용량은 5MB를 초과할 수 없습니다.");
+        this.value(''); //입력창 초기화
+        return; // 함수를 즉시 종료, 서버 전송 x
+    }
+
     // HTTP 통신을 위한 FormData를 생성
     let formData = new FormData();
     formData.append("file", file);
@@ -178,8 +187,17 @@ document.getElementById('imageInput').addEventListener('change', function() {
     fetch('/api/upload/image', {
         method: 'POST',
         body: formData
-    }).then(response => response.text())
-        .then(imageUrl => {
+    }).then(async response => {
+        // fetch 는 인터넷이 끊기지 않는 이상 서버 에러를 받아도 통신은 성공했다 하고 catch가 아닌 then으로 진입을하므로, flag 처리해야한다.
+        if(!response.ok){
+            // 백엔드에서 만든 JSON 상자를 연다.
+            let errorData = await response.json();
+
+            // 상자 안의 error를 throw
+            throw new Error(errorData.messages);
+        }
+        return response.text();
+    }).then(imageUrl => {
             //서버 저장이 끝나고 URL이 돌아오면, 웹소켓을 통해 채팅방에 URL을 전송
             let msgObj = {
                 sender: username,
