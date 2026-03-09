@@ -21,4 +21,18 @@
              ) AS sub
         ORDER BY send_time ASC
     </select>
+
+    <select id="getChatHistory" resultType="com.example.chattingroom.dto.MessageDTO">
+        SELECT id, sender, content, send_time
+        FROM CHAT_MESSAGE
+
+        <where>
+            <if test="lastId != null">
+                id &lt; #{lastId}
+            </if>
+        </where>
+        ORDER BY id DESC
+
+        LIMIT #{limit}
+    </select>
 </mapper>

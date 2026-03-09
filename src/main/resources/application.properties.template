@@ -35,8 +35,8 @@ gemini.api.key=apsepfkdkekdsksdk
 # ??? 1.5-flash? ??? ?? ??? 2.5-flash? ?????!
 gemini.api.url=https://generativelanguage.googleapis.com
 
-# 1. 파일 하나의 최대 크기 (5MB)
-spring.servlet.multipart.max-file-size = 5MB
+# 1. 파일 하나의 최대 크기 (30MB)
+spring.servlet.multipart.max-file-size = 30MB
 
-# 2. 요청 한 번에 보낼 수 있는 총 크기 (5MB)
-spring.servlet.multipart.max-request-size= 5MB
+# 2. 요청 한 번에 보낼 수 있는 총 크기 (30MB)
+spring.servlet.multipart.max-request-size= 30MB

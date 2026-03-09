@@ -23,75 +23,76 @@ function startChat() {
     document.getElementById("chatScreen").style.display = "block";
 
     connectWebSocket();
+
+    // ★ 추가된 부분: 화면이 나타난 직후 감시자 스위치 ON!
+    if (window.startChatObserver) {
+        window.startChatObserver();
+    }
 }
 
 // 이전 메시지의 날짜를 기억하고 있을 전역 변수
 let lastMessageDate = "";
 
-// 넘어온 메시지를 화면에 표기해주는 함수.
-function renderMessage(msgObj){
-
-    let box = document.getElementById("chatBox");
-
-    // 백엔드에서 넘어온 ISO 시간 데이터를 화면용으로 변환 ** 중요, 관심사의 분리로, 구현하면 해외의 인물과 연락할때 각 국가별로 시간을 프론트단에서 처리해서 표기하게됨.
-    let rawTime = msgObj.sendTime;
+// ★ 추가된 부분: 두 JS 파일이 공유할 말풍선 조립 공장
+window.createMessageBubble = function(msgObj) {
+    let rawTime = msgObj.sendTime || Date.now();
     let dateObj = new Date(rawTime);
+    let timeStr = dateObj.toLocaleTimeString('ko-KR', {
+        hour: 'numeric', minute: '2-digit', hour12: true
+    });
 
-    // 기존 getFormatTime() 대신 서버에서 가져온 시간    -> locales 인자로 전달한 값에 따라 표기법이바뀜. 프론트단에 역할 위임하기에 적합.
+    let displayContent = msgObj.content;
+    if (displayContent.startsWith("/uploads/")) {
+        displayContent = "<img src='" + displayContent +
+            "' style='max-width: 200px; border-radius: 8px;'>";
+    }
+
+    let wrapper = document.createElement("div");
+
+    if (msgObj.sender === username) {
+        wrapper.className = "msg-wrapper-me";
+        wrapper.innerHTML =
+            "<div class='msg-row msg-me'>" +
+            "<span class='msg-time'>" + timeStr + "</span>" +
+            "<div class='msg-bubble'>" + displayContent +
+            "</div></div>";
+    } else {
+        wrapper.className = "msg-wrapper-other";
+        wrapper.innerHTML =
+            "<div class='msg-sender'>" + msgObj.sender + "</div>" +
+            "<div class='msg-row msg-other'>" +
+            "<div class='msg-bubble'>" + displayContent + "</div>" +
+            "<span class='msg-time'>" + timeStr + "</span></div>";
+    }
+    return wrapper;
+};
+
+// 넘어온 메시지를 화면에 표기해주는 함수 (수정됨)
+function renderMessage(msgObj) {
+    let box = document.getElementById("chatBox");
+    let rawTime = msgObj.sendTime || Date.now();
+    let dateObj = new Date(rawTime);
     let currentDateStr = dateObj.toLocaleDateString('ko-KR');
 
-    // 새로운 메시지가 도착 -> 날짜가 바뀌었는가?
-    if(lastMessageDate !== currentDateStr){
+    if (lastMessageDate !== currentDateStr) {
         let displayDate = dateObj.toLocaleDateString('ko-KR', {
-            month: 'long',
-            day: 'numeric'
+            month: 'long', day: 'numeric'
         });
 
-        box.innerHTML += "<div class='date-divider'>" + "<span>" + displayDate + "</span>" + "</div>";
+        // innerHTML 대신 DOM 객체 생성 방식으로 통일
+        let dateDiv = document.createElement("div");
+        dateDiv.className = "date-divider";
+        dateDiv.innerHTML = "<span>" + displayDate + "</span>";
+        box.appendChild(dateDiv);
 
         lastMessageDate = currentDateStr;
     }
 
-    // 날짜가 바뀐게 아니라면 -> 기존 시간 반환
-    let timeStr = dateObj.toLocaleTimeString('ko-KR', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    });
+    // ★ 문자열 이어붙이기 대신 공통 공장에서 만든 객체를 삽입
+    let bubble = window.createMessageBubble(msgObj);
+    box.appendChild(bubble);
 
-    let sender = msgObj.sender;
-    let content = msgObj.content;
-
-    // 만약 이미지 경로라면 img 태그로 덮어씌운다.
-    let displayContent = content;
-
-    if (content.startsWith("/uploads/")){
-        displayContent = "<img src='" + content + "' style='max-width: 200px; " + "border-radius: 8px;'>";
-    }
-
-    // 내가 보낸 메시지라면? (우측 정렬)
-    if (sender === username) {
-        box.innerHTML +=
-            "<div class='msg-row msg-me'>" +
-            "<span class='msg-time'>" +
-            timeStr + "</span>" +
-            "<div class='msg-bubble'>" +
-            displayContent +
-            "</div></div>";
-
-        // 남이 보낸 메시지라면? (좌측 정렬 + 이름 표시)
-    } else {
-        box.innerHTML +=
-            "<div class='msg-sender'>" +
-            sender +
-            "</div>" +
-            "<div class='msg-row msg-other'>" +
-            "<div class='msg-bubble'>" + displayContent + "</div>" +
-            "<span class='msg-time'>" +
-            timeStr + "</span>" +
-            "</div>";
-    }
-    // 3. 메시지 추가 후 스크롤을 맨 아래로 내리기
+    // 메시지 추가 후 스크롤을 맨 아래로 내리기
     box.scrollTop = box.scrollHeight;
 }
 
@@ -166,7 +167,7 @@ function getFormatTime() {
     return ampm + " " + h + ":" + m;
 }
 
-document.getElementById('imageInput').addEventListener('change', function() {
+document.getElementById('imageInput').addEventListener('change', function () {
     let file = this.files[0];
     if (!file) return;
 
@@ -175,9 +176,25 @@ document.getElementById('imageInput').addEventListener('change', function() {
 
     if (file.size > MAX_SIZE) {
         alert("파일 용량은 5MB를 초과할 수 없습니다.");
-        this.value(''); //입력창 초기화
+        this.value=''; //입력창 초기화
         return; // 함수를 즉시 종료, 서버 전송 x
     }
+
+    // 로딩 UI 및 다중 클릭 방지
+    let inputBtn = this;
+    let chatBox = document.getElementById("chatBox");
+
+    // 버튼 잠금 (중복 클릭 방지)
+    inputBtn.disabled = true;
+
+    // 임시 로딩 말풍선을 메모리에 조립
+    let loadingDiv = document.createElement("div");
+    loadingDiv.className = "msg-row msg-me";
+    loadingDiv.id = "temp-loading";
+    loadingDiv.innerHTML = "<div class='msg-bubble'>" + "<div class='loader'></div>" + "사진 업로드 중...</div>";
+
+    chatBox.appendChild(loadingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     // HTTP 통신을 위한 FormData를 생성
     let formData = new FormData();
@@ -189,7 +206,7 @@ document.getElementById('imageInput').addEventListener('change', function() {
         body: formData
     }).then(async response => {
         // fetch 는 인터넷이 끊기지 않는 이상 서버 에러를 받아도 통신은 성공했다 하고 catch가 아닌 then으로 진입을하므로, flag 처리해야한다.
-        if(!response.ok){
+        if (!response.ok) {
             // 백엔드에서 만든 JSON 상자를 연다.
             let errorData = await response.json();
 
@@ -198,14 +215,29 @@ document.getElementById('imageInput').addEventListener('change', function() {
         }
         return response.text();
     }).then(imageUrl => {
-            //서버 저장이 끝나고 URL이 돌아오면, 웹소켓을 통해 채팅방에 URL을 전송
-            let msgObj = {
-                sender: username,
-                content: imageUrl,
-                messageType: "IMAGE"    // 텍스트와 구분하기 위한 꼬리표
-            };
-            ws.send(JSON.stringify(msgObj));
-        }).catch(error => alert("사진 업로드에 실패했습니다."));
+        document.getElementById("temp-loading").remove();
+
+        //서버 저장이 끝나고 URL이 돌아오면, 웹소켓을 통해 채팅방에 URL을 전송
+        let msgObj = {
+            sender: username,
+            content: imageUrl,
+            messageType: "IMAGE"    // 텍스트와 구분하기 위한 꼬리표
+        };
+        ws.send(JSON.stringify(msgObj));
+    }).catch(error => {
+        // 실패 : 로딩창 지우고 에러 메시지 -> 전송이 실패인데? loading이 떠있다? -> 삭제
+        let loadingEl = document.getElementById("temp-loading");
+        if (loadingEl) {
+            loadingEl.remove();
+        }
+
+        alert(error.message || "사진 업로드에 실패했습니다.");
+    })
+        .finally(() => {
+            //통신 종료 : 어떤 결과든 버튼 원상복구
+            inputBtn.disabled = false;
+            inputBtn.value = '';
+        });
 
     // 전송 후 입력창 초기화
     this.value = '';

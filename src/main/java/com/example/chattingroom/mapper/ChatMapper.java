@@ -14,4 +14,8 @@ public interface ChatMapper {
     );
 
     List<MessageDTO> selectRecentMessages();
+
+    // XML의 id ="getChatHistory" 매핑
+    // 파라미터가 2개 이상이므로 @Param으로 이름표를 달아줌.
+    List<MessageDTO> getChatHistory(@Param("lastId") Long lastId, @Param("limit") int limit);
 }

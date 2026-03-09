@@ -33,7 +33,9 @@
     <div id="userList" class="user-list">
         접속자:
     </div>
-    <div id="chatBox"></div>
+    <div id="chatBox">
+        <div id="observer-target" style="height: 1px;"></div>
+    </div>
     <div class="input-wrap">
         <input type="file" id="imageInput" accept="image/*" style="display: none;">
         <button onclick="document.getElementById('imageInput').click()">📷 사진</button>
@@ -49,5 +51,8 @@
 <spring:url value="/js/chat.js"
             var="jsUrl" />
 <script src="${jsUrl}"></script>
+
+<spring:url value="/js/chat-history.js" var="historyJsUrl" />
+<script src="${historyJsUrl}"></script>
 </body>
 </html>
