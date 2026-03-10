@@ -35,4 +35,12 @@
 
         LIMIT #{limit}
     </select>
+
+    <insert id="insertMessageBatch" parameterType="java.util.List">
+        INSERT INTO CHAT_MESSAGE (sender, content, send_time)
+        VALUES
+        <foreach collection="list" item="msg" separator=",">
+            (#{msg.sender}, #{msg.content}, #{msg.sendTime})
+        </foreach>
+    </insert>
 </mapper>
