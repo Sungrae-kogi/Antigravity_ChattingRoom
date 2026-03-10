@@ -27,6 +27,26 @@ Spring Boot와 WebSocket을 활용한
   메인 브랜치 Push 시 자동 빌드 및 통합 테스트 수행
 - **멱등성 있는 통합 테스트:** Testcontainers를 도입하여
   로컬 DB 환경에 의존하지 않는 독립적인 테스트 환경 구축
+- **대규모 트래픽 대비 Redis Write-Back 아키텍처**: 초당 수천 건의 채팅이 발생할 때 DB 커넥션이 고갈되는 병목을 막기 위해,
+  인메모리 저장소(Redis)를 완충 지대(Buffer)로 활용했습니다.
+  채팅 데이터는 0.001초 만에 Redis List에 임시 적재되며,
+  @Scheduled 배치 워커가 10초 주기로 데이터를 모아 MariaDB에
+  다중 삽입(Bulk Insert)하여 RDBMS의 부하를 극적으로 낮췄습니다.
+- **데이터 유실 제로, 우아한 종료(Graceful Shutdown)**:
+  스프링 컨테이너의 생명주기를 제어하는 @PreDestroy 센서를 부착하여,
+  서버 강제 종료나 배포 시 스케줄러 주기를 기다리지 않고
+  Redis의 잔여 데이터를 즉시 DB로 긁어모아 이관하는 방어망을 구축했습니다.
+- **UX 중심의 No-Offset 무한 스크롤 & DOM 최적화**:
+  과거 대화 내역을 불러올 때 느린 OFFSET 방식 대신
+  마지막 읽은 ID(lastId)를 기준점으로 삼는 No-Offset 쿼리로 페이징 성능을 극대화했습니다.
+  프론트엔드에서는 IntersectionObserver와 HTML5 <template> 태그를 도입하여
+  렌더링을 최적화하고, 과거 데이터 로드 시 발생하는
+  화면 널뛰기(Scroll Jump)를 스크롤 높이 보정 로직으로 완벽하게 방어했습니다.
+- **OCP를 준수한 업로드 인터페이스 분리 (SoC)**:
+  컨트롤러에 얽혀있던 로컬 디스크 파일 저장 로직을
+  ImageUploader 인터페이스와 구현체로 완벽히 분리(DI)했습니다.
+  이를 통해 향후 AWS S3 등 외부 클라우드 스토리지로 변경 시,
+  비즈니스 로직의 코드 수정 없이 부품만 갈아 끼울 수 있는 유연한 설계를 완성했습니다.
 
 ## 🚀 로컬 실행 방법
 
@@ -107,3 +127,24 @@ AI가 최근 대화의 문맥을 분석하여 요약해 주는 스마트 봇 기
 - **해결:** `src/test/resources`에 테스트 전용 설정 파일을 분리하여
   CI 환경을 완벽히 고립(Isolation)시키고 빌드 파이프라인을
   성공적으로 복구했습니다.
+
+**3. Redis 버퍼 적재 시 Java 8 LocalDateTime 직렬화(Serialization) 에러**
+
+- **원인**: Redis에 DTO 객체를 JSON으로 직렬화하여 저장할 때,
+  Spring Data Redis의 기본 Jackson 변환기(ObjectMapper)가
+  Java 8의 새로운 시간 타입(LocalDateTime)을 파싱하지 못해
+  InvalidDefinitionException이 발생하며 서버 동작이 중단됨.
+- **해결**: RedisConfig에서 커스텀 ObjectMapper를 생성하고,
+  JavaTimeModule을 명시적으로 등록하여 시간 변환 번역 사전을 추가했습니다.
+  또한 다형성 처리를 위해 @class 메타데이터가 JSON에 포함되도록
+  activateDefaultTyping 설정을 추가하여 안전한 직렬화 파이프라인을 복구했습니다.
+
+**4. 무한 스크롤 페이징 시 DTO Type Mismatch 에러 방어**
+
+- **원인**: 프론트엔드에서 다음 페이지 기준점(lastId)을 추출할 때,
+  백엔드 DTO에 식별자(id) 필드가 누락되어 JavaScript가 undefined를 반환.
+  이 값이 Spring 컨트롤러의 Long 타입으로 바인딩을 시도하다
+  NumberFormatException (500 에러) 발생.
+- **해결**: 프론트엔드에 undefined 타입 가드(Type Guard)를 추가하여
+  잘못된 API 호출을 원천 차단하고, 백엔드 MessageDTO에
+  PK 값을 매핑하여 데이터 규격을 완벽하게 동기화했습니다.
