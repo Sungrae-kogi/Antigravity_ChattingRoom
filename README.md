@@ -148,3 +148,7 @@ AI가 최근 대화의 문맥을 분석하여 요약해 주는 스마트 봇 기
 - **해결**: 프론트엔드에 undefined 타입 가드(Type Guard)를 추가하여
   잘못된 API 호출을 원천 차단하고, 백엔드 MessageDTO에
   PK 값을 매핑하여 데이터 규격을 완벽하게 동기화했습니다.
+
+
+# 사용 과정.
+  <img width="5120" height="2522" alt="image" src="https://github.com/user-attachments/assets/c3ef9987-a0e5-4c75-8cf5-f22cbef93c52" />
