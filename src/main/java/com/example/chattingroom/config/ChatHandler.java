@@ -17,7 +17,6 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.net.URLDecoder;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +51,13 @@ public class ChatHandler extends TextWebSocketHandler {
         log.info("[접속 성공] 세션 ID: {}",
                 session.getId());
 
-        // URL에서 닉네임 안전하게 추출 (?name=홍길동)
-        String query = session.getUri().getQuery();
-        String name = "익명";
-
-        if (query != null && query.contains("name=")) {
-            name = query.substring(
-                    query.indexOf("name=") + 5);
-            name = URLDecoder.decode(name, "UTF-8");
+        // HTTP 세션에서 사용자 이름(user) 꺼내기 (WebSocketConfig의 HandshakeInterceptor 덕분)
+        Map<String, Object> attributes = session.getAttributes();
+        String name = (String) attributes.get("user");
+        
+        // 로그인 없이 비정상 접근된 경우 방어 로직
+        if (name == null || name.trim().isEmpty()) {
+            name = "익명_" + session.getId().substring(0, 4);
         }
 
         // 명부에 세션과 닉네임 등록

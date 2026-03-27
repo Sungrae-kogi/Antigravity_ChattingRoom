@@ -1,34 +1,15 @@
-// 1. 입장 시 익명 이름 설정창
-let username = "익명";
+// 1. Session Username
+let username = document.getElementById("sessionUsername").value || "익명";
 let ws;
 let lastSendTime = 0;
 
-// 입장 로직
-document.getElementById("btnJoin").addEventListener("click", startChat);
-
-document.getElementById("nameInput").addEventListener("keyup", function (e) {
-    if (e.key === 'Enter')
-        startChat();
-});
-
-function startChat() {
-    let inputName = document.getElementById("nameInput").value.trim();
-
-    if (inputName !== "") {
-        username = inputName;
-    }
-
-    // 로그인 창 숨김, 채팅창 띄우기
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("chatScreen").style.display = "block";
-
+// 입장 로직 (Auto-start)
+window.addEventListener("DOMContentLoaded", () => {
     connectWebSocket();
-
-    // ★ 추가된 부분: 화면이 나타난 직후 감시자 스위치 ON!
     if (window.startChatObserver) {
         window.startChatObserver();
     }
-}
+});
 
 // 이전 메시지의 날짜를 기억하고 있을 전역 변수
 let lastMessageDate = "";
