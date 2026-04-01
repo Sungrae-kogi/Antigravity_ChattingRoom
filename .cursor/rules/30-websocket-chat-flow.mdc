@@ -1,0 +1,13 @@
+---
+description: WebSocket 채팅 흐름 보호 규칙
+globs: src/main/java/com/example/chattingroom/config/{ChatHandler,WebSocketConfig}.java
+alwaysApply: false
+---
+
+# WebSocket Chat Flow Rules
+
+- 메시지 처리 순서(수신 -> 명령 분기 -> 저장/브로드캐스트)를 변경할 때는 기존 동작 호환성을 우선한다.
+- `!요약` 같은 명령 메시지는 일반 채팅 브로드캐스트와 분리된 동작을 유지한다.
+- 세션/접속자 목록 관리(`sessionMap`)를 수정할 때 동시성 안전성을 해치지 않는다.
+- 채팅 저장은 기존 비동기/버퍼링 전략을 우선 존중한다.
+- 예외 발생 시 소켓 전체 장애로 번지지 않도록 세션 단위 실패 처리를 우선한다.

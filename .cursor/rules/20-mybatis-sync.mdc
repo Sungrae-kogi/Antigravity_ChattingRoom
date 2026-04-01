@@ -1,0 +1,13 @@
+---
+description: MyBatis Mapper 인터페이스와 XML 동기화 규칙
+globs: src/main/{java,resources}/**/*Mapper*
+alwaysApply: false
+---
+
+# MyBatis Sync Rules
+
+- `*Mapper.java` 메서드를 추가하거나 변경하면 대응되는 `*Mapper.xml`의 `id`와 파라미터를 반드시 함께 맞춘다.
+- 파라미터가 2개 이상이면 `@Param`을 명시한다.
+- 컬럼명과 DTO 필드명이 다르면 SQL에서 alias를 명확히 준다.
+- 페이징/히스토리 조회 쿼리는 기존 정렬 의미(최신/과거 순서)를 깨지 않도록 유지한다.
+- SQL 변경 시 호출 서비스 메서드와 DTO 매핑 영향까지 함께 점검한다.

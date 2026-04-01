@@ -1,0 +1,12 @@
+---
+description: JSP 정적 리소스/뷰 작업 규칙
+globs: src/main/webapp/WEB-INF/views/**/*.jsp
+alwaysApply: false
+---
+
+# JSP View Rules
+
+- CSS/JS 경로는 하드코딩 대신 `<spring:url>` 패턴을 우선 사용한다.
+- 세션 사용자 정보는 기존 `sessionScope` 사용 방식과 일관되게 유지한다.
+- DOM id/class를 바꿀 때는 연결된 JS 파일 영향(이벤트 바인딩)을 함께 수정한다.
+- UI 문구를 변경할 때는 기존 기능(로그아웃, 메시지 전송, 파일 업로드)의 동작을 깨지 않는다.

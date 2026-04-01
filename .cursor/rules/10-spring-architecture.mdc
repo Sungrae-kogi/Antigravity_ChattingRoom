@@ -1,0 +1,13 @@
+---
+description: Spring 계층 구조 및 코드 변경 원칙
+globs: src/main/java/**/*.java
+alwaysApply: false
+---
+
+# Spring Architecture Rules
+
+- 컨트롤러는 요청/응답 처리만 담당하고, 비즈니스 로직은 서비스로 이동한다.
+- DB 접근은 `mapper` 인터페이스와 XML SQL로만 처리하고, 컨트롤러에서 직접 저장 로직을 만들지 않는다.
+- 예외 처리는 가능한 `GlobalExceptionHandler` 패턴을 재사용한다.
+- 로깅은 `printStackTrace` 대신 로거를 사용하고, 운영에 필요한 메시지만 남긴다.
+- 기존 패키지 구조(`config`, `controller`, `service`, `mapper`, `dto`)를 유지한다.
