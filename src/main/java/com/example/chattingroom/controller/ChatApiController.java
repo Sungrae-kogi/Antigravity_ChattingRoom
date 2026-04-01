@@ -1,5 +1,6 @@
 package com.example.chattingroom.controller;
 
+import com.example.chattingroom.dto.ChatHistoryQuery;
 import com.example.chattingroom.dto.MessageDTO;
 import com.example.chattingroom.service.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,12 @@ public class ChatApiController {
             @RequestParam(required = false) Long lastId,
             @RequestParam(defaultValue = "50") int limit
     ){
-        List<MessageDTO> history = chatService.getChatHistory(lastId, limit);
+        ChatHistoryQuery query = ChatHistoryQuery.builder()
+                .lastId(lastId)
+                .limit(limit)
+                .build();
+
+        List<MessageDTO> history = chatService.getChatHistory(query);
 
         return ResponseEntity.ok(history);
     }

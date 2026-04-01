@@ -1,5 +1,6 @@
 package com.example.chattingroom.service;
 
+import com.example.chattingroom.dto.ChatHistoryQuery;
 import com.example.chattingroom.dto.MessageDTO;
 import com.example.chattingroom.mapper.ChatMapper;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class ChatService {
 
     // 단순조회작업 불필요한 dirtycheck 제외
     @Transactional(readOnly = true)
-    public List<MessageDTO> getChatHistory(Long lastId, int limit){
-        return chatMapper.getChatHistory(lastId, limit);
+    public List<MessageDTO> getChatHistory(ChatHistoryQuery query){
+        return chatMapper.getChatHistory(query);
     }
 }

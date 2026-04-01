@@ -22,7 +22,9 @@
         ORDER BY send_time ASC
     </select>
 
-    <select id="getChatHistory" resultType="com.example.chattingroom.dto.MessageDTO">
+    <select id="getChatHistory"
+            parameterType="com.example.chattingroom.dto.ChatHistoryQuery"
+            resultType="com.example.chattingroom.dto.MessageDTO">
         SELECT id, sender, content, send_time
         FROM CHAT_MESSAGE
 
