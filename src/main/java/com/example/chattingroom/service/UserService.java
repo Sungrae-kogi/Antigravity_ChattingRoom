@@ -32,12 +32,4 @@ public class UserService {
         return true;
     }
 
-    public UserDto login(String username, String password) {
-        UserDto user = userMapper.findByUsername(username);
-        
-        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-            return user;
-        }
-        return null; // Invalid credentials
-    }
 }
