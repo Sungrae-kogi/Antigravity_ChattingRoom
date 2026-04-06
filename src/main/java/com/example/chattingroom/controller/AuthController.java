@@ -18,6 +18,11 @@ public class AuthController {
 
     private final UserService userService;
 
+    @GetMapping("/")
+    public String Index() {
+        return "redirect:/signin";
+    }
+
     @GetMapping("/signin")
     public String showSigninPage(@RequestParam(value = "error", required = false) String error, Model model) {
         if (error != null) {
@@ -52,5 +57,5 @@ public class AuthController {
         }
     }
 
-// Logout is handled by Spring Security automatically via /logout
+    // Logout is handled by Spring Security automatically via /logout
 }
