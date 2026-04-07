@@ -15,15 +15,16 @@
 </head>
 <body>
 <div class="chat-header-bar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#fff; border-bottom:1px solid #ddd;">
-    <div><strong>환영합니다, ${sessionScope.user}님!</strong></div>
-    <a href="/logout" class="btn btn-sm btn-outline-danger">로그아웃</a>
+    <!-- 💡 변경 포인트: 세션 대신 Spring Security가 들고 있는 유저 정보(Principal)에서 이름 꺼내기! -->
+    <div><strong>환영합니다, ${pageContext.request.userPrincipal.name}님!</strong></div>
+    <a href="/api/auth/logout" class="btn btn-sm btn-outline-danger">로그아웃</a>
 </div>
 
 
 <div class="chat-wrap" id="chatScreen">
     <div class="header">SK 사내 익명 톡</div>
     <!-- Store username in a hidden element for chat.js to pick up -->
-    <input type="hidden" id="sessionUsername" value="${sessionScope.user}" />
+    <input type="hidden" id="sessionUsername" value="${pageContext.request.userPrincipal.name}" />
     <div id="userList" class="user-list">
         접속자:
     </div>

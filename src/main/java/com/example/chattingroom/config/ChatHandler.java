@@ -104,7 +104,8 @@ public class ChatHandler extends TextWebSocketHandler {
 
         // JsonNode : JSON 데이터의 트리 구조를 표현
         JsonNode node = mapper.readTree(payload);
-        String sender = node.get("sender").asText();
+        // 보안상 클라이언트가 보낸 sender(조작 가능성) 대신, 서버의 명부(인증된 정보)에서 꺼냅니다.
+        String sender = sessionMap.get(session);
         String content = node.get("content").asText();
 
         /**

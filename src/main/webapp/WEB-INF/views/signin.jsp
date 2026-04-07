@@ -22,7 +22,8 @@
             <div class="alert alert-danger">${error}</div>
         <% } %>
         
-        <form action="/signin" method="post">
+        <!-- 💡 변경 포인트: 폼 데이터를 우리가 만든 컨트롤러 주소(/api/auth/login)로 쏘도록 변경! -->
+        <form action="/api/auth/login" method="post">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
                 <input type="text" class="form-control" id="username" name="username" required>

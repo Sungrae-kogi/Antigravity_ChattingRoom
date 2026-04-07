@@ -34,6 +34,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        // 💡 Check 3: 이런 주소들은 굳이 쿠키를 열어보고 DB를 검사하는 '필터 작업'을 할 필요가 없습니다!
+        return path.startsWith("/css/") ||
+                path.startsWith("/js/") ||
+                path.startsWith("/uploads/") ||
+                path.startsWith("/error") ||
+                path.equals("/signin") ||
+                path.equals("/signup") ||
+                path.equals("/api/auth/login");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
@@ -47,7 +60,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 3. 토큰의 배를 갈라서 진짜 주인공의 ID(username)를 꺼냅니다.
                 String username = jwtUtil.getUsernameFromToken(jwt);
 
-                // 4. 꺼낸 ID로 DB를 뒤져서 해당 유저의 권한(Roles)과 정보(UserDetails)를 불러옵니다.
+                // 4. 꺼낸 ID로 DB를 뒤져서 해당 유저의 권한(Roles)과 정보(UserDetails)를 불러옵니다. -> 모든 요청시 DB 조회가
+                // 들어간상황.
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 // 5. 스프링 시큐리티 전용 '인증 완료 도장(Authentication 객체)'을 만듭니다.
