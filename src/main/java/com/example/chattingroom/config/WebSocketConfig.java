@@ -50,6 +50,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
                         // 통과된 이후의 작업 (여기서는 필요 없음)
                     }
                 })
-                .setAllowedOrigins("*");
+                // ★ CORS 수정: 모든 출처(*) 허용에서 프론트엔드 서버(3000번)만 허용하도록 변경
+                .setAllowedOrigins("http://localhost:3000");
     }
 }

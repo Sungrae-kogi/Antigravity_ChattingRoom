@@ -8,18 +8,18 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+import java.util.Map;
+
+// 💡 핵심: @Controller -> @RestController 로 변경! (더 이상 HTML 화면을 찾지 않고, '데이터(JSON)'만 주는 클래스로 변신합니다)
+@RestController
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
@@ -28,94 +28,68 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
-    @GetMapping("/")
-    public String Index() {
-        return "redirect:/signin";
-    }
+    // 💡 옛날 코드: @GetMapping("/signin") 같이 화면 띄워주던 코드들은 이제 미련 없이 싹 지웠습니다!
+    // (화면은 전부 프론트엔드인 3000번 포트에서 알아서 그릴 거니까요!)
 
-    @GetMapping("/signin")
-    public String showSigninPage(@RequestParam(value = "error", required = false) String error, Model model) {
-        if (error != null) {
-            model.addAttribute("error", "Invalid username or password");
-        }
-        return "signin";
-    }
-
-    /**
-     * 💡 변경 포인트: JWT 전용 로그인 로직
-     * 사용자가 전송한 ID/PW를 검증하고 성공 시 쿠키에 JWT를 담아줍니다.
-     */
+    // 💡 기존의 폼 데이터(@ModelAttribute) 대신 -> 프론트에서 보낼 JSON 데이터(@RequestBody)를 받도록 변경
     @PostMapping("/api/auth/login")
-    public String login(@ModelAttribute LoginRequest request, HttpServletResponse response, Model model) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         try {
-            // 1. 스프링 시큐리티의 인증 매니저에게 인증을 맡깁니다. (ID/PW 체크)
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
 
-            // 2. 인증에 성공했다면, JWT 토큰을 발행합니다.
             String token = jwtUtil.generateToken(authentication.getName());
 
-            // 3. 발행된 토큰을 쿠키(Cookie)에 정성껏 포장하여 담습니다.
             Cookie jwtCookie = new Cookie("JWT_TOKEN", token);
             jwtCookie.setHttpOnly(true);       // 자바스크립트가 못 건드리게 보안 설정
-            jwtCookie.setPath("/");             // 모든 경로에서 쿠키 사용 가능
-            jwtCookie.setMaxAge(3600);          // 1시간 동안 유효 (초 단위)
-            // jwtCookie.setSecure(true);       // HTTPS 환경이라면 활성화하세요!
-
-            // 4. 응답(Response)에 쿠키를 추가합니다.
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(3600);
+            
             response.addCookie(jwtCookie);
-
             log.info("사용자 {} 로그인 성공 (JWT 발급 완료)", request.getUsername());
 
-            // 5. 로그인 성공 시 채팅방으로 입장!
-            return "redirect:/room";
+            // 💡 옛날엔 return "redirect:/room" 이었지만, 이제는 백엔드가 "나 성공했어!" 하고 소식(JSON)만 알려줍니다.
+            // 이동할지 안할지는 프론트엔드가 이 데이터를 받고 결정합니다.
+            return ResponseEntity.ok().body(Map.of("status", "success", "message", "로그인 성공"));
 
         } catch (AuthenticationException e) {
-            // 인증에 실패했을 때 (ID/PW가 틀렸을 때)
             log.warn("로그인 실패: {}", e.getMessage());
-            model.addAttribute("error", "아이디 또는 비밀번호가 일치하지 않습니다.");
-            return "signin";
+            
+            // 💡 에러 발생 시 에러 메시지(JSP)를 그릴 필요 없이, 에러 코드(401)와 내용만 JSON으로 발송해 프론트가 처리하게 합니다.
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                 .body(Map.of("status", "error", "message", "아이디 또는 비밀번호가 일치하지 않습니다."));
         }
     }
 
-    @GetMapping("/signup")
-    public String showSignupPage() {
-        return "signup";
-    }
-
-    @PostMapping("/signup")
-    public String register(@ModelAttribute SignupRequest request, Model model) {
+    // 주소 통일성을 위해 /signup -> /api/auth/signup 으로 변경
+    @PostMapping("/api/auth/signup")
+    public ResponseEntity<?> register(@RequestBody SignupRequest request) {
         String username = request.getUsername();
         String password = request.getPassword();
 
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-            model.addAttribute("error", "Username and password are required");
-            return "signup";
+            return ResponseEntity.badRequest()
+                                 .body(Map.of("status", "error", "message", "이름과 비밀번호를 입력해주세요."));
         }
 
         boolean success = userService.register(username, password);
         if (success) {
             log.info("New user {} registered", username);
-            model.addAttribute("message", "Registration successful. Please sign in.");
-            return "signin";
+            return ResponseEntity.ok().body(Map.of("status", "success", "message", "회원가입이 완료되었습니다."));
         } else {
-            model.addAttribute("error", "Username already exists");
-            return "signup";
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                                 .body(Map.of("status", "error", "message", "이미 존재하는 아이디입니다."));
         }
     }
 
-    /**
-     * 💡 변경 포인트: 로그아웃 시 쿠키 삭제
-     */
     @GetMapping("/api/auth/logout")
-    public String logout(HttpServletResponse response) {
-        // 동일한 이름의 쿠키를 만들고 시간을 0으로 설정하면 브라우저가 즉시 삭제합니다.
+    public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie jwtCookie = new Cookie("JWT_TOKEN", null);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0);
         response.addCookie(jwtCookie);
 
-        return "redirect:/signin";
+        return ResponseEntity.ok().body(Map.of("status", "success", "message", "로그아웃 되었습니다."));
     }
 }
