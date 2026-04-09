@@ -83,6 +83,19 @@ public class AuthController {
         }
     }
 
+    // 💡 신규 추가: 현재 로그인한 유저의 이름을 반환하는 API
+    // 프론트엔드 채팅 페이지가 마운트될 때 "나는 누구인가?"를 확인하기 위해 호출합니다.
+    // JWT 쿠키가 있으면 JwtAuthenticationFilter가 이미 Authentication을 세팅해두었으므로
+    // Principal(Security 인증 객체) 에서 이름을 꺼내기만 하면 됩니다.
+    @GetMapping("/api/auth/me")
+    public ResponseEntity<?> me(java.security.Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                 .body(Map.of("status", "error", "message", "로그인이 필요합니다."));
+        }
+        return ResponseEntity.ok().body(Map.of("username", principal.getName()));
+    }
+
     @GetMapping("/api/auth/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie jwtCookie = new Cookie("JWT_TOKEN", null);

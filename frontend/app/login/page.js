@@ -43,6 +43,12 @@ export default function LoginPage() {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleLogin();
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full">
@@ -76,6 +82,7 @@ export default function LoginPage() {
                     <button
                         type="button"
                         onClick={handleLogin} // 버튼을 누르면 위에서 만든 handleLogin 함수가 실행됩니다!
+                        onKeyDown={handleKeyDown}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
                     >
                         로그인
