@@ -18,6 +18,7 @@
 // ════════════════════════════════════════════════════════════
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import MessageBubble from "../components/MessageBubble";
 
 // ════════════════════════════════════════════════════════════
 // 📌 [React 개념 3: 컴포넌트(Component) — React의 핵심 단위]
@@ -445,120 +446,7 @@ export default function ChatPage() {
         }
     };
 
-    // ════════════════════════════════════════════════════════
-    // 📌 [메시지 렌더링 헬퍼 함수]
-    //
-    // 기존 chat.js: createMessageBubble(msgObj) 함수가 DOM 요소를 직접 만들었습니다.
-    //   → wrapper.innerHTML = "<div ...>" + ... + "</div>"
-    //
-    // React에서는: JSX를 반환하는 함수로 만듭니다.
-    //   → 문자열로 HTML을 짜 맞추는 대신, JSX 태그를 반환합니다.
-    //   → 훨씬 가독성이 좋고, 타입 안전도 됩니다.
-    // ════════════════════════════════════════════════════════
-    const renderMessageBubble = (msgObj, index) => {
-        const rawTime = msgObj.sendTime || Date.now();
-        const dateObj = new Date(rawTime);
-        const timeStr = dateObj.toLocaleTimeString("ko-KR", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        });
-        const currentDateStr = dateObj.toLocaleDateString("ko-KR");
 
-        // 날짜 구분선이 필요한지 체크
-        const showDateDivider =
-            index === 0 ||
-            new Date(messages[index - 1]?.sendTime || 0).toLocaleDateString( // 이전 메시지의 날짜 값과 현재의 값이 다른가? -> 구분선 표기해야함
-                "ko-KR"
-            ) !== currentDateStr;
-
-        const displayDate = dateObj.toLocaleDateString("ko-KR", {
-            month: "long",
-            day: "numeric",
-        });
-
-        // 이미지 메시지인지 체크
-        const isImage =
-            msgObj.content &&
-            (msgObj.content.startsWith("/uploads/") ||
-                msgObj.messageType === "IMAGE");
-
-        const isMe = msgObj.sender === myUsername;
-
-        // ════════════════════════════════════════════════════
-        // 📌 [React 개념 7: JSX — JavaScript + HTML 혼합 문법]
-        //
-        // JSX는 JS 안에서 HTML처럼 생긴 코드를 쓸 수 있게 해주는 문법입니다.
-        // 컴파일 시 React.createElement(...) 호출로 변환됩니다.
-        //
-        // 주의사항:
-        //   - HTML class → JSX에서는 className (class는 JS 예약어라서)
-        //   - {} 안에는 JS 표현식 사용 가능: {isMe ? "나" : "상대방"}
-        //   - 모든 태그는 반드시 닫혀야 함: <br /> (self-closing)
-        // ════════════════════════════════════════════════════
-        return (
-            // ════════════════════════════════════════════════
-            // 📌 [React 개념 8: key prop — 목록 렌더링 필수]
-            //
-            // React가 배열을 map()으로 렌더링할 때, 각 요소에 고유한 key를 줘야 합니다.
-            // key가 있어야 React가 "이 요소는 새로 생겼고, 저 요소는 그대로구나"를
-            // 효율적으로 파악할 수 있습니다.
-            // 여기서는 index를 쓰지만, 실제 서비스에서는 message.id 같은 고유값을 씁니다.
-            // ════════════════════════════════════════════════
-            <div key={index}>
-                {/* 날짜 구분선 (기존 chat.js의 date-divider와 동일) */}
-                {showDateDivider && (           // showDateDivider가 true일 때만 렌더링
-                    <div className="date-divider">
-                        <span>{displayDate}</span>
-                    </div>
-                )}
-
-                {/* 내 메시지: 오른쪽 / 상대방 메시지: 왼쪽 */}
-                {isMe ? (
-                    <div className="msg-wrapper-me">
-                        <div className="msg-row msg-me">
-                            <span className="msg-time">{timeStr}</span>
-                            <div className="msg-bubble">
-                                {isImage ? (
-                                    <img
-                                        src={`http://localhost:8080${msgObj.content}`}
-                                        alt="전송된 이미지"
-                                        style={{
-                                            maxWidth: "200px",
-                                            borderRadius: "8px",
-                                        }}
-                                    />
-                                ) : (
-                                    msgObj.content
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="msg-wrapper-other">
-                        <div className="msg-sender">{msgObj.sender}</div>
-                        <div className="msg-row msg-other">
-                            <div className="msg-bubble">
-                                {isImage ? (
-                                    <img
-                                        src={`http://localhost:8080${msgObj.content}`}
-                                        alt="전송된 이미지"
-                                        style={{
-                                            maxWidth: "200px",
-                                            borderRadius: "8px",
-                                        }}
-                                    />
-                                ) : (
-                                    msgObj.content
-                                )}
-                            </div>
-                            <span className="msg-time">{timeStr}</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
 
     // ════════════════════════════════════════════════════════
     // 📌 [React 개념 9: return — 화면에 그릴 JSX 반환]     export default ChatPage()의 return
@@ -641,9 +529,24 @@ export default function ChatPage() {
                         State(messages)가 바뀔 때마다 이 map도 다시 실행 →
                         새 메시지가 화면에 자동으로 나타납니다!
                         ════════════════════════════════════════════════ */}
-                    {messages.map((msg, index) =>
-                        renderMessageBubble(msg, index)
-                    )}
+                    {messages.map((msg, index) => {
+                        // 자식(MessageBubble)이 쓸 수 있도록 여기서 날짜 구분선 여부를 계산해 줍니다.
+                        const currentDateStr = new Date(msg.sendTime || Date.now()).toLocaleDateString("ko-KR");
+                        const showDateDivider =
+                            index === 0 ||
+                            new Date(messages[index - 1]?.sendTime || 0).toLocaleDateString("ko-KR") !== currentDateStr;
+
+                        // 💡 여기서 새 부품을 조립하고, Props로 데이터를 넘겨줍니다!
+                        return (
+                            <MessageBubble
+                                key={index}           // 반복문에 필수!
+                                msgObj={msg}          // 1. 메시지 원본 데이터
+                                index={index}         // 2. 메시지 순번 번호
+                                showDateDivider={showDateDivider} // 3. 선을 그어? 말아?
+                                isMe={msg.sender === myUsername}  // 4. 내 메시지니?
+                            />
+                        );
+                    })}
 
                     {/* 이미지 업로드 중 로딩 말풍선 */}
                     {isUploading && (

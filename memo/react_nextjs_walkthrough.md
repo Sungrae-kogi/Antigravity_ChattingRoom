@@ -45,7 +45,7 @@ frontend/app/
 
 > **핵심:** `page.js`라는 이름은 Next.js의 약속(예약어)입니다.
 > 이 이름이어야만 해당 폴더 경로가 URL로 등록됩니다.
->
+> Props 개념이 여기서 들어감.   부모 -> 자식
 > `layout.js`는 모든 `page.js`를 `{children}` 자리에 끼워 넣는 공통 틀입니다.
 
 ---
@@ -212,7 +212,7 @@ useEffect(() => {
     if (!myUsername) return;  // 아직 이름 없으면 대기
 
     const ws = new WebSocket("ws://localhost:8080/chat");
-    wsRef.current = ws;  // 소켓 객체를 useRef에 보관
+    wsRef.current = ws;  // 소켓 객체를 useRef에 보관   화면이 다시 그려질때는 값을 유지, 새로고침하면 JS 메모리가 초기화되어 사라짐.
 
     ws.onmessage = (event) => {
         const msgObj = JSON.parse(event.data);
