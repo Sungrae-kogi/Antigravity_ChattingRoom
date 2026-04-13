@@ -8,6 +8,7 @@ export default function LoginPage() {
     // username: 현재 값, setUsername: 값을 바꾸는 리모컨           username : 현재 글자가 저장될 진짜 변수  -> setUsername()에 타이핑을 하는순간 계속 username에 값이 들어감.
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [errorMsg, setErrorMsg] = useState(""); // 에러 메시지를 담을 공간
     const router = useRouter(); // 라우터(네비게이션) 도구 장착!
 
     // 2. 로그인 버튼을 눌렀을 때 실행될 함수
@@ -31,15 +32,14 @@ export default function LoginPage() {
             const data = await response.json(); // 백엔드가 보내준 답변(JSON)을 뜯어봅니다.
 
             if (response.ok && data.status === "success") {
-                alert("로그인 성공!");
                 // 3. 로그인이 성공했으므로 프론트엔드가 주도적으로 채팅방(/chat) 화면으로 이동시킵니다!
                 router.push("/chat");
             } else {
                 // 비밀번호가 틀렸을 때 백엔드가 보내준 에러 메시지를 띄워줍니다.
-                alert("로그인 실패: " + data.message);
+                setErrorMsg("로그인 실패: " + data.message);
             }
         } catch (error) {
-            alert("서버와 통신하는 중 문제가 발생했습니다.");
+            setErrorMsg("서버와 통신하는 중 문제가 발생했습니다.");
         }
     };
 
@@ -53,6 +53,13 @@ export default function LoginPage() {
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full">
                 <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">SK 사내 익명 톡</h1>
+
+                {/* 에러 메시지가 있을 때만 뜨는 경고 박스 */}
+                {errorMsg && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm" role="alert">
+                        <span className="block sm:inline">{errorMsg}</span>
+                    </div>
+                )}
 
                 <form className="space-y-4">
                     <div>

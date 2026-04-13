@@ -66,16 +66,8 @@ public class ChatHandler extends TextWebSocketHandler {
         // 전원에게 갱신된 접속자 명단 쏘기
         broadcastUserList();
 
-        List<MessageDTO> history = chatService.getRecentMessages();
-
-        // 새로 입장한 사람에게 이전 채팅히스토리 제공.
-        for (MessageDTO dto : history) {
-            // 받아온 DTO를 JSON 문자열로 변환.
-            String jsonStr = mapper.writeValueAsString(dto);
-
-            // 본인에게만 전송.    ->  본인 session
-            session.sendMessage(new TextMessage(jsonStr));
-        }
+        // [수정됨] 기존 이 자리에 있던 "과거 50개 메시지 강제 전송" 로직을 삭제했습니다.
+        // 프론트엔드가 REST API(/api/chat/history)를 통해 직접 호출하므로 중복 방지.
     }
 
     @Override

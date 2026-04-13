@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function SignupPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
     const router = useRouter();
 
     const handleSignup = async () => {
@@ -27,14 +28,14 @@ export default function SignupPage() {
             const data = await response.json();
 
             if (response.ok && data.status === "success") {
-                alert("회원가입 성공! 이제 로그인 해주세요.");
+                // 옵션 2: 성공 alert를 지우고 자연스럽게 로그인 페이지로 이동
                 // 성공하면 프론트엔드가 주도적으로 로그인 페이지(/login)로 이동시킵니다!
                 router.push("/login"); 
             } else {
-                alert("회원가입 실패: " + data.message);
+                setErrorMsg("회원가입 실패: " + data.message);
             }
         } catch (error) {
-            alert("서버와 통신하는 중 문제가 발생했습니다.");
+            setErrorMsg("서버와 통신하는 중 문제가 발생했습니다.");
         }
     };
 
@@ -43,6 +44,12 @@ export default function SignupPage() {
             <div className="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full">
                 <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">회원가입</h1>
                 
+                {errorMsg && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm" role="alert">
+                        <span className="block sm:inline">{errorMsg}</span>
+                    </div>
+                )}
+
                 <form className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">사용할 아이디</label>

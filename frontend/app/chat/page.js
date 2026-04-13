@@ -19,6 +19,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import MessageBubble from "../components/MessageBubble";
+import UserListSidebar from "../components/UserListSidebar"; // 👈 [추가 1] 사이드바 컴포넌트 프라모델 박스 가져오기!
 
 // ════════════════════════════════════════════════════════════
 // 📌 [React 개념 3: 컴포넌트(Component) — React의 핵심 단위]
@@ -50,8 +51,8 @@ export default function ChatPage() {
     // 채팅 메시지 목록 (백엔드에서 받은 메시지들이 쌓이는 배열)
     const [messages, setMessages] = useState([]);
 
-    // 접속자 목록 문자열 (기존 [USERS] 형식으로 받아서 파싱)
-    const [users, setUsers] = useState("접속자 없음");
+    // 👈 [추가 2] 접속자 목록 상태를 빈 배열([])로 초기화합니다.
+    const [users, setUsers] = useState([]);
 
     // 입력창에 타이핑하는 텍스트
     const [inputText, setInputText] = useState("");
@@ -182,7 +183,9 @@ export default function ChatPage() {
             // [USERS] 로 시작하면 → 접속자 명단 업데이트
             if (data.startsWith("[USERS]")) {
                 const userStr = data.substring(7);
-                setUsers(userStr || "접속자 없음");
+                // 👈 [추가 3] "홍길동, 김아무개" 문자열을 쉼표 기준으로 쪼개어 배열로 변환
+                const userArray = userStr.split(',').map(name => name.trim()).filter(name => name);
+                setUsers(userArray); // 👈 변환된 배열을 그대로 덮어씌움. (자동 렌더링 시작!)
                 return;
             }
 
@@ -263,6 +266,9 @@ export default function ChatPage() {
         if (isFetchingRef.current || isEndRef.current) return;      // isFetchingRef.current = "지금 요청 중인가?" || isEndRef.current = "데이터가 끝났는가?"
         isFetchingRef.current = true;                               // "지금 요청 중"으로 변경, lock 하는것과 동일
 
+        // 👈 [수정: 버그 픽스] 현재 서버에 요청하는 것이 최초 로딩(방 입장)인지 확인합니다.
+        const isInitialLoad = (oldestChatIdRef.current === null);
+
         // 로드 전 현재 스크롤 높이를 기억 (나중에 스크롤 위치 보정에 사용)
         const prevScrollHeight = chatBoxRef.current?.scrollHeight || 0; // chatBoxRef.current 가 null일 경우 undefined가 나오는데, 이럴 경우 0으로 대체.
 
@@ -305,7 +311,16 @@ export default function ChatPage() {
             requestAnimationFrame(() => {
                 if (chatBoxRef.current) {
                     const newScrollHeight = chatBoxRef.current.scrollHeight;
-                    chatBoxRef.current.scrollTop += newScrollHeight - prevScrollHeight;
+
+                    if (isInitialLoad) {
+                        // 👈 [수정: 버그 픽스] 방에 처음 들어와서 데이터를 불렀다면 (isInitialLoad === true)
+                        // 중간에서 멈추지 말고 무조건 최신 대화(맨 아래)로 스크롤을 꽂아버립니다!
+                        chatBoxRef.current.scrollTop = newScrollHeight;
+                    } else {
+                        // 그것이 아니라 스크롤을 윗부분으로 올려서 과거 내역을 불러온 거라면 원래 보던 위치를 유지합니다.
+                        // 기존위치에서 새로 불러온 내역의 높이만큼 더하고 기존의 높이를 빼서 원래 보던 위치를 유지합니다.
+                        chatBoxRef.current.scrollTop += newScrollHeight - prevScrollHeight;
+                    }
                 }
             });
         } catch (err) {
@@ -459,65 +474,69 @@ export default function ChatPage() {
     // ════════════════════════════════════════════════════════
     return (
         // min-h-screen: 최소 높이를 화면 전체로, bg-[#f4f5f7]: 기존 CSS의 배경색 유지
-        <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center p-4">
+        // 👈 [추가 4] 화면 레이아웃을 다시 잡습니다. 중앙으로 모으면서 PC 화면처럼 가로로 넓게 씁니다.
+        <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-start pt-10 px-4">
 
-            {/* ── 상단 헤더 바 (로그인 유저 표시 + 로그아웃) ── */}
-            <div className="w-full max-w-md mb-2 flex justify-between items-center px-3 py-2 bg-white rounded-xl shadow-sm">
-                <span className="text-sm font-medium text-gray-700">
-                    👤 <strong>{myUsername || "..."}</strong> 님
-                </span>
-                <button
-                    onClick={handleLogout}
-                    className="text-sm text-white font-semibold px-3 py-1 rounded-lg transition-all duration-200"
-                    style={{ backgroundColor: "#E3000F" }}
-                >
-                    로그아웃
-                </button>
-            </div>
+            {/* ── PC 뷰 수평 래퍼 (가로로 요소들을 나란히 배치) ── */}
+            <div className="flex flex-row w-full max-w-[50rem] justify-center items-stretch">
 
-            {/* ── 채팅 메인 래퍼 ── */}
-            <div className="chat-wrap w-full max-w-md flex flex-col"
-                style={{ borderRadius: "10px", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+                {/* ── 왼쪽 블록: 헤더 + 기존 채팅방 ── */}
+                <div className="flex flex-col w-full max-w-md">
 
-                {/* ── 상단 타이틀 헤더 (SK 레드→오렌지 그라데이션) ── */}
-                <div
-                    className="header text-white text-center py-4 font-bold text-lg"
-                    style={{
-                        background: "linear-gradient(to right, #E3000F, #F6A800)",
-                    }}
-                >
-                    SK 사내 익명 톡 💬
-                </div>
+                    {/* ── 상단 헤더 바 (로그인 유저 표시 + 로그아웃) ── */}
+                    <div className="w-full mb-2 flex justify-between items-center px-3 py-2 bg-white rounded-xl shadow-sm">
+                        <span className="text-sm font-medium text-gray-700">
+                            👤 <strong>{myUsername || "..."}</strong> 님
+                        </span>
+                        <button
+                            onClick={handleLogout}
+                            className="text-sm text-white font-semibold px-3 py-1 rounded-lg transition-all duration-200"
+                            style={{ backgroundColor: "#E3000F" }}
+                        >
+                            로그아웃
+                        </button>
+                    </div>
 
-                {/* ── 접속자 명단 바 ── */}
-                <div className="user-list">
-                    👥 접속자: {users}
-                </div>
+                    {/* ── 채팅 메인 래퍼 ── */}
+                    <div className="chat-wrap w-full flex flex-col"
+                        style={{ borderRadius: "10px", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
 
-                {/* ── 채팅 메시지 영역 ──
+                        {/* ── 상단 타이틀 헤더 (SK 레드→오렌지 그라데이션) ── */}
+                        <div
+                            className="header text-white text-center py-4 font-bold text-lg"
+                            style={{
+                                background: "linear-gradient(to right, #E3000F, #F6A800)",
+                            }}
+                        >
+                            SK 사내 익명 톡 💬
+                        </div>
+
+                        {/* 👈 기존의 구형 텍스트 명단 바(<div className="user-list">)는 우측 사이드바로 완벽하게 대체되었으므로 과감히 삭제했습니다! */}
+
+                        {/* ── 채팅 메시지 영역 ──
                     ref={chatBoxRef}: 이 div를 chatBoxRef로 잡아두었다가
                     메시지가 추가될 때 scrollTop 을 조작합니다.
                     (기존 document.getElementById("chatBox")와 동일한 역할)
                 */}
-                <div
-                    id="chatBox"
-                    ref={chatBoxRef}
-                    style={{
-                        height: "420px",
-                        padding: "15px",
-                        overflowY: "auto",
-                        background: "#fafafa",
-                        borderBottom: "1px solid #eee",
-                    }}
-                >
-                    {/* ── 스크롤 감지 타겟 div ──
+                        <div
+                            id="chatBox"
+                            ref={chatBoxRef}
+                            style={{
+                                height: "420px",
+                                padding: "15px",
+                                overflowY: "auto",
+                                background: "#fafafa",
+                                borderBottom: "1px solid #eee",
+                            }}
+                        >
+                            {/* ── 스크롤 감지 타겟 div ──
                         기존 room.jsp의 <div id="observer-target" style="height:1px"> 와 동일.
                         chatBox 맨 위에 위치하며, IntersectionObserver가 이걸 감시합니다.
                         사용자가 스크롤을 최상단까지 올리면 이 div가 화면에 들어오고,
                         그 순간 fetchHistory()가 실행됩니다.
                     */}
-                    <div ref={observerTargetRef} style={{ height: "1px" }} />
-                    {/* ════════════════════════════════════════════════
+                            <div ref={observerTargetRef} style={{ height: "1px" }} />
+                            {/* ════════════════════════════════════════════════
                         📌 [React 개념 10: .map() — 배열 반복 렌더링]
 
                         기존 chat.js: box.appendChild(bubble) 을 반복
@@ -529,95 +548,104 @@ export default function ChatPage() {
                         State(messages)가 바뀔 때마다 이 map도 다시 실행 →
                         새 메시지가 화면에 자동으로 나타납니다!
                         ════════════════════════════════════════════════ */}
-                    {messages.map((msg, index) => {
-                        // 자식(MessageBubble)이 쓸 수 있도록 여기서 날짜 구분선 여부를 계산해 줍니다.
-                        const currentDateStr = new Date(msg.sendTime || Date.now()).toLocaleDateString("ko-KR");
-                        const showDateDivider =
-                            index === 0 ||
-                            new Date(messages[index - 1]?.sendTime || 0).toLocaleDateString("ko-KR") !== currentDateStr;
+                            {messages.map((msg, index) => {
+                                // 자식(MessageBubble)이 쓸 수 있도록 여기서 날짜 구분선 여부를 계산해 줍니다.
+                                const currentDateStr = new Date(msg.sendTime || Date.now()).toLocaleDateString("ko-KR");
+                                const showDateDivider =
+                                    index === 0 ||
+                                    new Date(messages[index - 1]?.sendTime || 0).toLocaleDateString("ko-KR") !== currentDateStr;
 
-                        // 💡 여기서 새 부품을 조립하고, Props로 데이터를 넘겨줍니다!
-                        return (
-                            <MessageBubble
-                                key={index}           // 반복문에 필수!
-                                msgObj={msg}          // 1. 메시지 원본 데이터
-                                index={index}         // 2. 메시지 순번 번호
-                                showDateDivider={showDateDivider} // 3. 선을 그어? 말아?
-                                isMe={msg.sender === myUsername}  // 4. 내 메시지니?
-                            />
-                        );
-                    })}
+                                // 💡 여기서 새 부품을 조립하고, Props로 데이터를 넘겨줍니다!
+                                return (
+                                    <MessageBubble
+                                        key={index}           // 반복문에 필수!
+                                        msgObj={msg}          // 1. 메시지 원본 데이터
+                                        index={index}         // 2. 메시지 순번 번호
+                                        showDateDivider={showDateDivider} // 3. 선을 그어? 말아?
+                                        isMe={msg.sender === myUsername}  // 4. 내 메시지니?
+                                    />
+                                );
+                            })}
 
-                    {/* 이미지 업로드 중 로딩 말풍선 */}
-                    {isUploading && (
-                        <div className="msg-wrapper-me">
-                            <div className="msg-row msg-me">
-                                <div className="msg-bubble" style={{ backgroundColor: "#F6A800", color: "white" }}>
-                                    <div className="loader" style={{ display: "inline-block" }}></div>
-                                    사진 업로드 중...
+                            {/* 이미지 업로드 중 로딩 말풍선 */}
+                            {isUploading && (
+                                <div className="msg-wrapper-me">
+                                    <div className="msg-row msg-me">
+                                        <div className="msg-bubble" style={{ backgroundColor: "#F6A800", color: "white" }}>
+                                            <div className="loader" style={{ display: "inline-block" }}></div>
+                                            사진 업로드 중...
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* ── 하단 입력창 영역 ── */}
-                <div className="input-wrap" style={{ display: "flex", padding: "10px", backgroundColor: "#fff" }}>
+                        {/* ── 하단 입력창 영역 ── */}
+                        <div className="input-wrap" style={{ display: "flex", padding: "10px", backgroundColor: "#fff" }}>
 
-                    {/* 사진 버튼 → 숨겨진 file input을 클릭하게 해줌 */}
-                    <button
-                        onClick={() => imageInputRef.current?.click()}
-                        className="text-sm px-3 mr-2 rounded-lg font-medium transition-all duration-200"
-                        style={{
-                            backgroundColor: "#f0f0f0",
-                            color: "#555",
-                            border: "1px solid #ddd",
-                        }}
-                        title="사진 전송"
-                    >
-                        📷
-                    </button>
+                            {/* 사진 버튼 → 숨겨진 file input을 클릭하게 해줌 */}
+                            <button
+                                onClick={() => imageInputRef.current?.click()}
+                                className="text-sm px-3 mr-2 rounded-lg font-medium transition-all duration-200"
+                                style={{
+                                    backgroundColor: "#f0f0f0",
+                                    color: "#555",
+                                    border: "1px solid #ddd",
+                                }}
+                                title="사진 전송"
+                            >
+                                📷
+                            </button>
 
-                    {/* 실제 파일 선택 input (화면에는 보이지 않음, display:none) */}
-                    <input
-                        type="file"
-                        accept="image/*"
-                        ref={imageInputRef}
-                        onChange={handleImageUpload}
-                        style={{ display: "none" }}
-                    />
+                            {/* 실제 파일 선택 input (화면에는 보이지 않음, display:none) */}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                ref={imageInputRef}
+                                onChange={handleImageUpload}
+                                style={{ display: "none" }}
+                            />
 
-                    {/* 텍스트 입력창
+                            {/* 텍스트 입력창
                         value={inputText}: State와 input 값을 양방향으로 묶음 (Controlled Input)
                         onChange: 타이핑할 때마다 State를 업데이트
                         → 이걸 "제어 컴포넌트(Controlled Component)" 패턴이라고 합니다.
                     */}
-                    <input
-                        id="msgInput"
-                        type="text"
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="메시지 입력..."
-                        style={{
-                            flex: 1,
-                            padding: "10px",
-                            border: "1px solid #ddd",
-                            borderRadius: "5px",
-                            outline: "none",
-                        }}
-                    />
+                            <input
+                                id="msgInput"
+                                type="text"
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="메시지 입력..."
+                                style={{
+                                    flex: 1,
+                                    padding: "10px",
+                                    border: "1px solid #ddd",
+                                    borderRadius: "5px",
+                                    outline: "none",
+                                }}
+                            />
 
-                    {/* 전송 버튼 */}
-                    <button
-                        id="btnSend"
-                        onClick={handleSend}
-                        className="btn-send font-bold ml-2 px-4 rounded-lg text-white transition-all duration-200"
-                        style={{ backgroundColor: "#E3000F" }}
-                    >
-                        전송
-                    </button>
+                            {/* 전송 버튼 */}
+                            <button
+                                id="btnSend"
+                                onClick={handleSend}
+                                className="btn-send font-bold ml-2 px-4 rounded-lg text-white transition-all duration-200"
+                                style={{ backgroundColor: "#E3000F" }}
+                            >
+                                전송
+                            </button>
+                        </div>
+                    </div>
+                    {/* ── 왼쪽 블록 끝 ── */}
                 </div>
+
+                {/* ── 오른쪽 블록: 접속자 명단 사이드바 ── */}
+                {/* 👈 [추가 5] 우리가 1단계에서 만든 조립식 부품을 여기에 '탁' 끼워넣고, users 배열(Props)을 쥐어줍니다! */}
+                <UserListSidebar users={users} />
+
+                {/* ── PC 뷰 수평 래퍼 끝 ── */}
             </div>
         </div>
     );
